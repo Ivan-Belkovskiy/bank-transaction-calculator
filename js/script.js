@@ -3,10 +3,50 @@ let submitButton = document.querySelector('.submit-btn');
 let inputField = document.querySelector('.input-field');
 let outputBlock = document.querySelector('.output');
 submitButton?.addEventListener('click', () => calculateTransactionsFull(inputField));
+const bankSelect = document.querySelector('select');
+const bankSelectOptions = [
+    {
+        className: 'main-select__option',
+        value: 'statusbank',
+        text: 'СтатусБанк',
+        selected: true,
+    },
+    {
+        className: 'main-select__option',
+        disabled: true,
+        value: 'bankdabrabyt',
+        text: 'Банк Дабрабыт',
+    },
+    {
+        className: 'main-select__option',
+        disabled: true,
+        value: 'mtbank',
+        text: 'МТБанк',
+    },
+];
+setupSelectOptions(bankSelect, bankSelectOptions);
+function setupSelectOptions(selectElement, options) {
+    if (!selectElement || !options)
+        return;
+    options.forEach((option) => {
+        const optElement = document.createElement('option');
+        // let key: TSelectOptionAllowedProperty;
+        for (const key in option) {
+            if (key in option) {
+                optElement[key] = option[key];
+                console.log(key);
+            }
+        }
+        selectElement.appendChild(optElement);
+    });
+}
 function calculateTransactionsFull(inputField) {
     if (!inputField || !inputField.value)
         return;
     inputField.disabled = true;
+    if (submitButton) {
+        submitButton.disabled = true;
+    }
     let transactions = calculateTransactions(inputField);
     const startDate = transactions[transactions.length - 1].date;
     const endDate = transactions[0].date;
@@ -22,9 +62,16 @@ function calculateTransactionsFull(inputField) {
             paymentMoney += transaction.moneyMinus;
         }
     });
-    console.info(`За период с ${startDate} по ${endDate}:`);
-    console.info(`Доходы: ${incomingMoney} BYN`);
-    console.info(`Расходы: ${paymentMoney} BYN`);
+    if (outputBlock instanceof HTMLDivElement) {
+        outputBlock.innerHTML = `
+            <h2>За период с ${startDate} по ${endDate}:</h2>
+            <p style="color: green; font-weight: bold;">Доходы: <span style="font-style: italic;">${incomingMoney} BYN</span></p>
+            <p style="color: red; font-weight: bold;">Расходы: <span style="font-style: italic;">${paymentMoney} BYN</span></p>
+        `;
+    }
+    // console.info(`За период с ${startDate} по ${endDate}:`);
+    // console.info(`Доходы: ${incomingMoney} BYN`);
+    // console.info(`Расходы: ${paymentMoney} BYN`);
     // console.log(transactions); 
 }
 function calculateTransactions(inputField) {

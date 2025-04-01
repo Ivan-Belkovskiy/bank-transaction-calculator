@@ -1,3 +1,22 @@
+interface ISelectOption {
+    value: string,
+    className?: string,
+    disabled?: boolean,
+    text: string,
+    selected?: boolean,
+}
+
+type TSelectOptionAllowedProperties = {
+    [K in keyof HTMLOptionElement]:
+    K extends keyof ISelectOption ? HTMLOptionElement[K] extends string ?
+    K extends number ? keyof HTMLOptionElement : K : never : never
+}[keyof ISelectOption];
+
+type TSelectOptionProperties = {
+    [key in TSelectOptionAllowedProperties]?: any
+}
+
+// type TSelectOptionAllowedProperty = keyof HTMLOptionElement extends keyof ISelectOption ? keyof HTMLOptionElement : keyof ISelectOption;
 
 interface IBankTransaction {
     date: string,
@@ -9,18 +28,60 @@ interface IBankTransaction {
 
 let submitButton: HTMLButtonElement | null = document.querySelector('.submit-btn');
 let inputField: HTMLTextAreaElement | null = document.querySelector('.input-field');
-let outputBlock = document.querySelector('.output');
+let outputBlock: HTMLDivElement | null = document.querySelector('.output');
 
 submitButton?.addEventListener('click', () => calculateTransactionsFull(inputField));
 
-function calculateTransactionsFull(inputField: HTMLTextAreaElement | HTMLInputElement | null) {
+const bankSelect: HTMLSelectElement | null = document.querySelector('select');
+const bankSelectOptions: ISelectOption[] = [
+    {
+        className: 'main-select__option',
+        value: 'statusbank',
+        text: 'СтатусБанк',
+        selected: true,
+    },
+    {
+        className: 'main-select__option',
+        disabled: true,
+        value: 'bankdabrabyt',
+        text: 'Банк Дабрабыт',
+    },
+    {
+        className: 'main-select__option',
+        disabled: true,
+        value: 'mtbank',
+        text: 'МТБанк',
+    },
+];
+
+setupSelectOptions(bankSelect, bankSelectOptions);
+
+function setupSelectOptions(selectElement: HTMLSelectElement | null, options: ISelectOption[]): void {
+    if (!selectElement || !options) return;
+    options.forEach((option: ISelectOption) => {
+        const optElement: HTMLOptionElement = document.createElement('option');
+        // let key: TSelectOptionAllowedProperty;
+        for (const key in option) {
+            if (key in option) {
+                optElement[key as keyof TSelectOptionProperties] = option[key as keyof ISelectOption] as never;
+                console.log(key);
+            }
+        }
+        selectElement.appendChild(optElement);
+    });
+}
+
+function calculateTransactionsFull(inputField: HTMLTextAreaElement | HTMLInputElement | null): void {
     if (!inputField || !inputField.value) return;
     inputField.disabled = true;
+    if (submitButton) {
+        submitButton.disabled = true;
+    }
     let transactions = calculateTransactions(inputField);
     const startDate = transactions[transactions.length - 1].date;
     const endDate = transactions[0].date;
     let incomingMoney = 0;
-    transactions.forEach((transaction) => {
+    transactions.forEach((transaction: IBankTransaction) => {
         if (transaction.moneyAdd > 0) {
             incomingMoney += transaction.moneyAdd;
         }
@@ -31,9 +92,16 @@ function calculateTransactionsFull(inputField: HTMLTextAreaElement | HTMLInputEl
             paymentMoney += transaction.moneyMinus;
         }
     });
-    console.info(`За период с ${startDate} по ${endDate}:`);
-    console.info(`Доходы: ${incomingMoney} BYN`);
-    console.info(`Расходы: ${paymentMoney} BYN`);
+    if (outputBlock instanceof HTMLDivElement) {
+        outputBlock.innerHTML = `
+            <h2>За период с ${startDate} по ${endDate}:</h2>
+            <p style="color: green; font-weight: bold;">Доходы: <span style="font-style: italic;">${incomingMoney} BYN</span></p>
+            <p style="color: red; font-weight: bold;">Расходы: <span style="font-style: italic;">${paymentMoney} BYN</span></p>
+        `;
+    }
+    // console.info(`За период с ${startDate} по ${endDate}:`);
+    // console.info(`Доходы: ${incomingMoney} BYN`);
+    // console.info(`Расходы: ${paymentMoney} BYN`);
     // console.log(transactions); 
 }
 

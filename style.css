@@ -10,14 +10,30 @@
     cursor: pointer;
 }
 
+.submit-btn:disabled {
+    cursor: default;
+}
+
 .output {
     width: 100%;
-    display: flex;
+    text-align: center;
+    /* display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: start; */
 }
 
 .input-field {
     width: 75%;
-    height: 400px;
+    height: 300px;
+}
+
+p {
+    font-size: 18px;
+}
+
+.main-select {
+    cursor: pointer;
+    padding: 5px 10px;
+    margin: 15px 0 40px 0;
 }
