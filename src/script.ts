@@ -49,6 +49,14 @@ let outputBlock: HTMLDivElement | null = document.querySelector('.output');
 
 submitButton?.addEventListener('click', () => calculateTransactionsFull(inputField, currentBank));
 
+inputField?.addEventListener('input', () => {
+    if (!inputField?.value) return;
+    (checkBankByTransactionString(inputField.value) != null) ? currentBank = checkBankByTransactionString(inputField.value) as TBankNames : alert('Внимание! Введенный текст не является транзакциями банка!');
+    if (!bankSelect) return;
+    bankSelect.value = currentBank;
+    // alert(checkBankByTransactionString(inputField.value));
+});
+
 const bankSelect: HTMLSelectElement | null = document.querySelector('select');
 const bankSelectOptions: ISelectOption[] = [
     {
@@ -94,6 +102,20 @@ function setupSelectOptions(selectElement: HTMLSelectElement | null, options: IS
         selectElement.addEventListener('change', () => onChangeCallback(selectElement));
         onChangeCallback(selectElement);
     }
+}
+
+function checkBankByTransactionString(str: string): TBankNames | null {
+    let result: TBankNames | null = null;
+    // for (let i: number = 0; i < str.length; i++) {
+    if (str.replace(/^\n/g, '')[0].match(/\d/g) && str.slice(0, str.indexOf(' ')).match(/\d{2}.\d{2}.\d{4}/g)) {
+        result = 'statusbank';
+    } else if (str.replace(/^\n/g, '').split('\n')[0].match(/[+-][0-9]* BYN/g) && str.replace(/^\n/g, '').split('\n')[1].match(/\d{2}.\d{2}.\d{4} (\d{2}:){2}\d{2}/g) /* В дальнейшем добавить больше проверок на Банк Дабрабыт */) {
+        result = 'bankdabrabyt';
+    } else if (str.replace(/^\n/g, '').split('\n')[0].match(/\d{2} [а-я]*, \d{4} года/g) && str.replace(/^\n/g, '').split('\n')[1].match(/(\d{2}:){2}\d{2}/g) && str.replace(/^\n/g, '').toLowerCase().split('\n')[2].match(/[a-zа-я]/g)) {
+        result = 'mtbank';
+    }
+    // }
+    return result;
 }
 
 function calculateTransactionsFull(inputField: HTMLTextAreaElement | HTMLInputElement | null, bankName?: TBankNames): void {
@@ -400,9 +422,9 @@ function calculateTransactions(bankName: TBankNames, inputField: HTMLTextAreaEle
 
                 // console.log('Parsing Transaction Location! :: ' + parseSubData);
                 if (parseSubData) {
-                    if (inputField.value[i] == '\n') {
+                    if (inputField.value[i] == '\n' || inputField.value[i + 1] == undefined) {
                         (obj as IBankTransaction<'bankdabrabyt'>).location = tmp.join('');
-                        if (inputField.value[i + 1].toLowerCase().match(/[a-z]/g)) {
+                        if (inputField.value[i + 1] != undefined && inputField.value[i + 1].toLowerCase().match(/[a-z]/g)) {
                             parseType = 'MCC';
                             parseSubData = false;
                             tmp = [];
