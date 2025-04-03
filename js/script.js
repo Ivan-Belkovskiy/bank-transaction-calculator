@@ -15,12 +15,13 @@ const bankSelectOptions = [
         className: 'main-select__option',
         value: 'bankdabrabyt',
         text: 'Банк Дабрабыт',
+        // selected: true,
     },
     {
         className: 'main-select__option',
-        disabled: true,
         value: 'mtbank',
         text: 'МТБанк',
+        // selected: true,
     },
 ];
 let currentBank = 'statusbank';
@@ -43,6 +44,7 @@ function setupSelectOptions(selectElement, options, onChangeCallback) {
     });
     if (onChangeCallback) {
         selectElement.addEventListener('change', () => onChangeCallback(selectElement));
+        onChangeCallback(selectElement);
     }
 }
 function calculateTransactionsFull(inputField, bankName) {
@@ -62,6 +64,8 @@ function calculateTransactionsFull(inputField, bankName) {
     //     // alert('end function!');
     //     return;
     // };
+    if (transactions.length < 1)
+        return;
     const startDate = transactions[transactions.length - 1].date;
     const endDate = transactions[0].date;
     let incomingMoney = 0;
@@ -91,12 +95,43 @@ function calculateTransactionsFull(inputField, bankName) {
     // console.info(`Расходы: ${paymentMoney} BYN`);
     // console.log(transactions); 
 }
+const months = {
+    'января': '01',
+    'февраля': '02',
+    'марта': '03',
+    'апреля': '04',
+    'мая': '05',
+    'июня': '06',
+    'июля': '07',
+    'августа': '08',
+    'сентября': '09',
+    'октября': '10',
+    'ноября': '11',
+    'декабря': '12',
+};
+function getMonthNumber(str) {
+    // const months: { [key: string]: string } = {
+    //     'января': '01',
+    //     'февраля': '02',
+    //     'марта': '03',
+    //     'апреля': '04',
+    //     'мая': '05',
+    //     'июня': '06',
+    //     'июля': '07',
+    //     'августа': '08',
+    //     'сентября': '09',
+    //     'октября': '10',
+    //     'ноября': '11',
+    //     'декабря': '12',
+    // }
+    return months[str];
+}
 function calculateTransactions(bankName, inputField) {
     if ((!inputField || !inputField.value) || !bankName)
         return [];
     let result = [];
     let dotsCounter = 0;
-    let parseType = (bankName == 'statusbank') ? 'date' : 'money';
+    let parseType = (bankName == 'bankdabrabyt') ? 'money' : 'date';
     let quotCounter = 0;
     let tmp = [];
     // let obj: IBankTransaction<typeof bankName> = {
@@ -115,13 +150,21 @@ function calculateTransactions(bankName, inputField) {
         moneyMinus: 0,
         authorisationCode: '',
         rrn: '',
-    } : {
+    } : (bankName == 'bankdabrabyt') ? {
         moneyAdd: 0,
         moneyMinus: 0,
         date: '',
         type: '',
         location: '',
         MCC: '',
+    } : {
+        date: '',
+        type: '',
+        MCC: '',
+        location: '',
+        moneyAdd: 0,
+        moneyMinus: 0,
+        cardName: '',
     };
     let parseSubData = false;
     for (let i = 0; i < inputField.value.length; i++) {
@@ -240,8 +283,8 @@ function calculateTransactions(bankName, inputField) {
             }
         }
         else if (bankName == 'bankdabrabyt') {
-            console.log(`#${i}  ::   Current Symbol: "${inputField.value[i]}";\nparseType="${parseType}";\nparseSubData="${parseSubData}";`);
-            console.log(`Value[i + 1]: "${inputField.value[i + 1]}";`);
+            // console.log(`#${i}  ::   Current Symbol: "${inputField.value[i]}";\nparseType="${parseType}";\nparseSubData="${parseSubData}";`);
+            // console.log(`Value[i + 1]: "${inputField.value[i + 1]}";`);
             if (parseType == 'money') {
                 if (inputField.value[i] == '+') {
                     parseType = 'incomingMoney';
@@ -272,7 +315,7 @@ function calculateTransactions(bankName, inputField) {
                 }
                 else if (inputField.value[i] == ' ') {
                     obj.moneyMinus += Number(tmp.join(''));
-                    console.log(`Payment Money: ${obj.moneyMinus}`);
+                    // console.log(`Payment Money: ${obj.moneyMinus}`);
                 }
                 else {
                     tmp.push(inputField.value[i]);
@@ -300,7 +343,7 @@ function calculateTransactions(bankName, inputField) {
                     obj.type = tmp.join('');
                     // console.log('Transaction TYPE: ' + tmp.join(''));
                     // console.log(`value[i+1]: ${inputField.value[i + 1]}`);
-                    console.log(inputField.value[i + 1].toLowerCase());
+                    // console.log(inputField.value[i + 1].toLowerCase());
                     if (inputField.value[i + 1].toLowerCase().match(/[а-я]/g)) {
                         // Разобраться, почему не работает этот код!!! 
                         parseType = 'transactionLocation';
@@ -404,6 +447,135 @@ function calculateTransactions(bankName, inputField) {
                         tmp = [];
                         parseSubData = true;
                     }
+                }
+            }
+        }
+        else if (bankName == 'mtbank') {
+            if (parseType == 'date') {
+                if (inputField.value[i] == '\n') {
+                    const tempDate = tmp.join('').replace(',', '').split(' ').slice(0, 3);
+                    tempDate[1] = getMonthNumber(tempDate[1]);
+                    obj.date = tempDate.join('.');
+                    tmp = [];
+                    parseType = 'time';
+                    // console.log(`DATE: ` + obj.date);
+                    // break;
+                }
+                else {
+                    tmp.push(inputField.value[i]);
+                }
+            }
+            else if (parseType == 'time') {
+                if (inputField.value[i] == '\n') {
+                    for (const month in months) {
+                        if (tmp.join('').includes(month)) {
+                            const tempDate = tmp.join('').replace(',', '').split(' ').slice(0, 3);
+                            tempDate[1] = getMonthNumber(tempDate[1]);
+                            obj.date = tempDate.join('.');
+                        }
+                    }
+                    // Add Code To Save Time To Object
+                    tmp = [];
+                    parseType = 'type';
+                }
+                else {
+                    tmp.push(inputField.value[i]);
+                }
+            }
+            else if (parseType == 'type') {
+                if (inputField.value[i] == '\n') {
+                    obj.type = tmp.join('');
+                    tmp = [];
+                    parseType = 'transactionData';
+                }
+                else {
+                    tmp.push(inputField.value[i]);
+                }
+            }
+            else if (parseType == 'transactionData') {
+                // console.log('Parsing Transaction Data!');
+                if (inputField.value[i] == '\n') {
+                    const data = tmp.join('').split('/');
+                    if (data[0].slice(0, 3) == 'MCC') {
+                        obj.MCC = Number(data[0].replace(/\D/g, ''));
+                        if (data[1].length > 5) {
+                            obj.location = data[1].trim().replace(/\s+/g, ' ');
+                        }
+                    }
+                    else if (data[0].length > 5) {
+                        obj.location = data[0].trim().replace(/\s+/g, ' ');
+                    }
+                    tmp = [];
+                    if (inputField.value[i + 1].match(/[^0-9+-]/g)) {
+                    }
+                    else if (inputField.value[i + 1].match(/[+-]/g)) {
+                        parseType = 'money';
+                    }
+                    else {
+                        break;
+                    }
+                }
+                else {
+                    tmp.push(inputField.value[i]);
+                }
+            }
+            else if (parseType == 'money') {
+                tmp.push(inputField.value[i]);
+                if (inputField.value[i] == '\n' || inputField.value[i + 1] == undefined) {
+                    const str = tmp.join(''); // В дальнейшем поменять тип tmp с any[] на string
+                    const money = Number(str.replace(/[A-Z+-\s]/g, '').replace(',', '.'));
+                    if (str[0] == '+') {
+                        obj.moneyAdd += money;
+                    }
+                    else {
+                        obj.moneyMinus += money;
+                    }
+                    if (inputField.value[i + 1] != undefined && inputField.value[i + 1].toLowerCase().match(/[a-zа-я]/g)) {
+                        tmp = [];
+                        parseType = 'cardName';
+                    }
+                    else {
+                        // Переходим к разбору следующей транзакции
+                        dotsCounter = 0;
+                        quotCounter = 0;
+                        // alert(inputField.value[i-1]);
+                        tmp = [];
+                        result.push(obj);
+                        obj = {
+                            date: obj.date,
+                            type: '',
+                            MCC: '',
+                            location: '',
+                            moneyAdd: 0,
+                            moneyMinus: 0,
+                            cardName: '',
+                        };
+                        parseType = 'time';
+                        // i -= 1;
+                    }
+                }
+            }
+            else if (parseType == 'cardName') {
+                tmp.push(inputField.value[i]);
+                if (inputField.value[i] == '\n' || (i >= (inputField.value.length - 1))) {
+                    obj.cardName = tmp.join('');
+                    // Переходим к разбору следующей транзакции
+                    dotsCounter = 0;
+                    quotCounter = 0;
+                    // alert(inputField.value[i-1]);
+                    tmp = [];
+                    result.push(obj);
+                    obj = {
+                        date: obj.date,
+                        type: '',
+                        MCC: '',
+                        location: '',
+                        moneyAdd: 0,
+                        moneyMinus: 0,
+                        cardName: '',
+                    };
+                    parseType = 'time';
+                    // i -= 1;
                 }
             }
         }
