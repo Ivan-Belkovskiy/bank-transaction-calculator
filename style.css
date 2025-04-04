@@ -1,0 +1,39 @@
+.container {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.submit-btn {
+    margin: 25px 0;
+    cursor: pointer;
+}
+
+.submit-btn:disabled {
+    cursor: not-allowed;
+}
+
+.output {
+    width: 100%;
+    text-align: center;
+    /* display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: start; */
+}
+
+.input-field {
+    width: 75%;
+    height: 300px;
+}
+
+p {
+    font-size: 18px;
+}
+
+.main-select {
+    cursor: pointer;
+    padding: 5px 10px;
+    margin: 15px 0 40px 0;
+}
