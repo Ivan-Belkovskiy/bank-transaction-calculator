@@ -109,7 +109,7 @@ function checkBankByTransactionString(str: string): TBankNames | null {
     // for (let i: number = 0; i < str.length; i++) {
     if (str.replace(/^\n/g, '')[0].match(/\d/g) && str.slice(0, str.indexOf(' ')).match(/\d{2}.\d{2}.\d{4}/g)) {
         result = 'statusbank';
-    } else if (str.replace(/^\n/g, '').split('\n')[0].match(/[+-][0-9]* BYN/g) && str.replace(/^\n/g, '').split('\n')[1].match(/\d{2}.\d{2}.\d{4} (\d{2}:){2}\d{2}/g) /* В дальнейшем добавить больше проверок на Банк Дабрабыт */) {
+    } else if (str.replace(/^\n/g, '').split('\n')[0].match(/[+-][0-9]*.[0-9]* BYN/g) && str.replace(/^\n/g, '').split('\n')[1].match(/\d{2}.\d{2}.\d{4} (\d{2}:){2}\d{2}/g) /* В дальнейшем добавить больше проверок на Банк Дабрабыт */) {
         result = 'bankdabrabyt';
     } else if (str.replace(/^\n/g, '').split('\n')[0].match(/\d{2} [а-я]*, \d{4} года/g) && str.replace(/^\n/g, '').split('\n')[1].match(/(\d{2}:){2}\d{2}/g) && str.replace(/^\n/g, '').toLowerCase().split('\n')[2].match(/[a-zа-я]/g)) {
         result = 'mtbank';
@@ -381,18 +381,40 @@ function calculateTransactions(bankName: TBankNames, inputField: HTMLTextAreaEle
                     tmp.push(inputField.value[i]);
                 }
             } else if (parseType == 'time') {
-                if (inputField.value[i] == '\n') {
-                    parseType = 'transactionType';
-                    tmp = [];
+                if (inputField.value[i] == '\n' || inputField.value[i + 1] == undefined) {
+                    // parseType = 'transactionType';
+                    // tmp = [];
+                    if (inputField.value[i + 1] != undefined && inputField.value[i + 1].toLowerCase().match(/[a-zа-я]/g)) {
+                        parseType = 'transactionType';
+                        parseSubData = false;
+                        tmp = [];
+                    } else {
+                        // Переходим к разбору следующей транзакции
+                        dotsCounter = 0;
+                        quotCounter = 0;
+                        // alert(inputField.value[i-1]);
+                        tmp = [];
+                        result.push(obj);
+                        obj = {
+                            moneyAdd: 0,
+                            moneyMinus: 0,
+                            date: '',
+                            type: '',
+                            location: '',
+                            MCC: '',
+                        }
+                        parseType = 'money';
+                        // i -= 1;
+                    }
                 }
             } else if (parseType == 'transactionType') {
                 // console.log(`value[i+1]: ${inputField.value[i + 1]}`);
-                if (inputField.value[i] == '\n') {
+                if (inputField.value[i] == '\n' || inputField.value[i + 1] == undefined) {
                     (obj as IBankTransaction<'bankdabrabyt'>).type = tmp.join('');
                     // console.log('Transaction TYPE: ' + tmp.join(''));
                     // console.log(`value[i+1]: ${inputField.value[i + 1]}`);
                     // console.log(inputField.value[i + 1].toLowerCase());
-                    if (inputField.value[i + 1].toLowerCase().match(/[а-я]/g)) {
+                    if (inputField.value[i + 1] != undefined && inputField.value[i + 1].toLowerCase().match(/[а-я]/g)) {
                         // Разобраться, почему не работает этот код!!! 
                         parseType = 'transactionLocation';
                         parseSubData = false;
@@ -493,12 +515,12 @@ function calculateTransactions(bankName: TBankNames, inputField: HTMLTextAreaEle
         } else if (bankName == 'mtbank') {
             if (parseType == 'date') {
                 if (inputField.value[i] == '\n') {
-                    const tempDate: string[] = tmp.join('').replace(',', '').split(' ').slice(0, 3);
+                    const str: string = tmp.join('');
+                    const tempDate: string[] = (str.replace(',', '').split(' ')[0].match(/\d/g)) ? str.replace(',', '').split(' ').slice(0, 3) : str.replace(',', '').split(' ').slice(1, 4);
                     tempDate[1] = getMonthNumber(tempDate[1]);
                     obj.date = tempDate.join('.');
                     tmp = [];
                     parseType = 'time';
-                    // console.log(`DATE: ` + obj.date);
                     // break;
                 } else {
                     tmp.push(inputField.value[i]);
