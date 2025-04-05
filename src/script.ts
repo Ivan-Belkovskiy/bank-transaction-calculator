@@ -109,7 +109,7 @@ function checkBankByTransactionString(str: string): TBankNames | null {
     // for (let i: number = 0; i < str.length; i++) {
     if (str.replace(/^\n/g, '')[0].match(/\d/g) && str.slice(0, str.indexOf(' ')).match(/\d{2}.\d{2}.\d{4}/g)) {
         result = 'statusbank';
-    } else if (str.replace(/^\n/g, '').split('\n')[0].match(/[+-][0-9]*.[0-9]* BYN/g) && str.replace(/^\n/g, '').split('\n')[1].match(/\d{2}.\d{2}.\d{4} (\d{2}:){2}\d{2}/g) /* В дальнейшем добавить больше проверок на Банк Дабрабыт */) {
+    } else if (str.replace(/^\n/g, '').split('\n')[0].match(/[+-][0-9]*.[0-9]* BYN/g) && (str.replace(/^\n/g, '').split('\n')[1].match(/\d{2}.\d{2}.\d{4} (\d{2}:){2}\d{2}/g) || str.replace(/^\n/g, '').split('\n')[1].toLowerCase().match(/[а-яa-z]/g)) /* В дальнейшем добавить больше проверок на Банк Дабрабыт */) {
         result = 'bankdabrabyt';
     } else if (str.replace(/^\n/g, '').split('\n')[0].match(/\d{2} [а-я]*, \d{4} года/g) && str.replace(/^\n/g, '').split('\n')[1].match(/(\d{2}:){2}\d{2}/g) && str.replace(/^\n/g, '').toLowerCase().split('\n')[2].match(/[a-zа-я]/g)) {
         result = 'mtbank';
@@ -156,7 +156,11 @@ function calculateTransactionsFull(inputField: HTMLTextAreaElement | HTMLInputEl
 
     if (outputBlock instanceof HTMLDivElement) {
         outputBlock.innerHTML = `
-            <h2>${(startDate === endDate) ? `За ${startDate}:` : `За период с ${startDate} по ${endDate}:`}</h2>
+            ${(startDate.match(/(\d{2}.){2}\d{4}/g) && endDate.match(/(\d{2}.){2}\d{4}/g)) ? `
+                <h2>${(startDate === endDate) ? `За ${startDate}:` : `За период с ${startDate} по ${endDate}:`}</h2>
+                ` : `
+                <h2>Период не определен! На входе есть транзакции без даты совершения!</h2>
+                `}
             <p style="color: green; font-weight: bold;">Доходы: <span style="font-style: italic;">${Math.round(incomingMoney * 100) / 100} BYN</span></p>
             <p style="color: red; font-weight: bold;">Расходы: <span style="font-style: italic;">${Math.round(paymentMoney * 100) / 100} BYN</span></p>
         `;
@@ -354,29 +358,65 @@ function calculateTransactions(bankName: TBankNames, inputField: HTMLTextAreaEle
                 tmp = [];
             } else if (parseType == 'incomingMoney') {
                 if (inputField.value[i] == '\n') {
+                    obj.moneyAdd += Number(tmp.join('').toLowerCase().replace(/[a-zа-я\s+-]/g, ''));
                     parseType = 'date';
                     tmp = [];
-                } else if (inputField.value[i] == ' ') {
-                    obj.moneyAdd += Number(tmp.join(''));
-                    // console.log(`money Add: ${obj.moneyAdd}`);
                 } else {
                     tmp.push(inputField.value[i]);
                 }
             } else if (parseType == 'paymentMoney') {
                 if (inputField.value[i] == '\n') {
+                    obj.moneyMinus += Number(tmp.join('').toLowerCase().replace(/[a-zа-я\s+-]/g, ''));
                     parseType = 'date';
                     tmp = [];
-                } else if (inputField.value[i] == ' ') {
-                    obj.moneyMinus += Number(tmp.join(''));
-                    // console.log(`Payment Money: ${obj.moneyMinus}`);
                 } else {
                     tmp.push(inputField.value[i]);
                 }
             } else if (parseType == 'date') {
-                if (inputField.value[i] == ' ') {
+                // if (inputField.value[i] == ' ') {
+                if (inputField.value[i] == '\n' || inputField.value[i + 1] == undefined) {
                     // console.log('DATE: ' + tmp.join(''));
-                    obj.date = tmp.join('');
-                    parseType = 'time';
+
+
+
+
+
+                    if (tmp.join('').match(/(\d{2}.){2}\d{4}/g)) {
+                        obj.date = tmp.join('').replace(/(\d{2}:){2}\d{2}|\s/g, '');
+                        if (tmp.join('').match(/(\d{2}:){2}\d{2}/g)) {
+                            // Set Time = tmp.join('').replace(/(\d{2}.){2}\d{4}|\s/g, ''); // В дальнейшем сохранять время транзакций
+                        }
+                        parseType = 'transactionType';
+                    } else {
+                        if (inputField.value[i + 1] != undefined && inputField.value[i + 1].toLowerCase().match(/[a-zа-я]/g)) {
+                            if (inputField.value[i + 1].toLowerCase().trim().slice((i), (i + 14)).includes('место')) {
+                                parseType = 'transactionLocation';
+                            } else {
+                                parseType = 'transactionType';
+                            }
+                            parseSubData = false;
+                            tmp = [];
+                        } else {
+                            // Переходим к разбору следующей транзакции
+                            dotsCounter = 0;
+                            quotCounter = 0;
+                            // alert(inputField.value[i-1]);
+                            tmp = [];
+                            result.push(obj);
+                            obj = {
+                                moneyAdd: 0,
+                                moneyMinus: 0,
+                                date: '',
+                                type: '',
+                                location: '',
+                                MCC: '',
+                            }
+                            parseType = 'money';
+                            // i -= 1;
+                        }
+                        // obj.date = tmp.join('');
+                        // parseType = 'time';
+                    }
                 } else {
                     tmp.push(inputField.value[i]);
                 }
