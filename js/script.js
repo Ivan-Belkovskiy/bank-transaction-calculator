@@ -6,7 +6,7 @@ submitButton?.addEventListener('click', () => calculateTransactionsFull(inputFie
 inputField?.addEventListener('input', () => {
     if (!inputField?.value)
         return;
-    (checkBankByTransactionString(inputField.value) != null) ? currentBank = checkBankByTransactionString(inputField.value) : alert('Внимание! Введенный текст не является транзакциями банка!');
+    (checkBankByTransactionString(inputField.value) != null) ? currentBank = checkBankByTransactionString(inputField.value) : null;
     if (!bankSelect)
         return;
     bankSelect.value = currentBank;
