@@ -325,6 +325,7 @@ function calculateTransactions(bankName, inputField) {
             }
             else if (parseType == 'incomingMoney') {
                 if (inputField.value[i] == '\n') {
+                    console.log(tmp.join(''));
                     obj.moneyAdd += Number(tmp.join('').toLowerCase().replace(/[a-zа-я\s+-]/g, ''));
                     parseType = 'date';
                     tmp = [];
@@ -335,9 +336,11 @@ function calculateTransactions(bankName, inputField) {
             }
             else if (parseType == 'paymentMoney') {
                 if (inputField.value[i] == '\n') {
+                    console.log(tmp.join(''));
                     obj.moneyMinus += Number(tmp.join('').toLowerCase().replace(/[a-zа-я\s+-]/g, ''));
                     parseType = 'date';
                     tmp = [];
+                    // i++;
                 }
                 else {
                     tmp.push(inputField.value[i]);
@@ -345,14 +348,44 @@ function calculateTransactions(bankName, inputField) {
             }
             else if (parseType == 'date') {
                 // if (inputField.value[i] == ' ') {
+                tmp.push(inputField.value[i]);
                 if (inputField.value[i] == '\n' || inputField.value[i + 1] == undefined) {
-                    // console.log('DATE: ' + tmp.join(''));
+                    // console.log('DATE: ' + tmp.join('').replace(/(\d{2}:){2}\d{2}|\s/g, ''));
                     if (tmp.join('').match(/(\d{2}.){2}\d{4}/g)) {
                         obj.date = tmp.join('').replace(/(\d{2}:){2}\d{2}|\s/g, '');
                         if (tmp.join('').match(/(\d{2}:){2}\d{2}/g)) {
                             // Set Time = tmp.join('').replace(/(\d{2}.){2}\d{4}|\s/g, ''); // В дальнейшем сохранять время транзакций
                         }
-                        parseType = 'transactionType';
+                        // parseType = 'transactionType';
+                        // tmp = [];
+                        if (inputField.value[i + 1] != undefined && inputField.value[i + 1].toLowerCase().match(/[a-zа-я]/g)) {
+                            if (inputField.value[i + 1].toLowerCase().trim().slice((i), (i + 14)).includes('место')) {
+                                parseType = 'transactionLocation';
+                            }
+                            else {
+                                parseType = 'transactionType';
+                            }
+                            parseSubData = false;
+                            tmp = [];
+                        }
+                        else {
+                            // Переходим к разбору следующей транзакции
+                            dotsCounter = 0;
+                            quotCounter = 0;
+                            // alert(inputField.value[i-1]);
+                            tmp = [];
+                            result.push(obj);
+                            obj = {
+                                moneyAdd: 0,
+                                moneyMinus: 0,
+                                date: '',
+                                type: '',
+                                location: '',
+                                MCC: '',
+                            };
+                            parseType = 'money';
+                            // i -= 1;
+                        }
                     }
                     else {
                         if (inputField.value[i + 1] != undefined && inputField.value[i + 1].toLowerCase().match(/[a-zа-я]/g)) {
@@ -386,9 +419,6 @@ function calculateTransactions(bankName, inputField) {
                         // obj.date = tmp.join('');
                         // parseType = 'time';
                     }
-                }
-                else {
-                    tmp.push(inputField.value[i]);
                 }
             }
             else if (parseType == 'time') {
@@ -665,6 +695,6 @@ function calculateTransactions(bankName, inputField) {
         // console.log(dotsCounter + " " + inputField.value[i]);
         // outputBlock.innerHTML += inputField.value[i] + '<br>';
     }
-    console.info(result);
+    // console.info(result);
     return result;
 }
